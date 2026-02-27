@@ -11,8 +11,16 @@ RUN apt-get update && apt-get install -y \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the backend code
-COPY backend/ ./backend/
+# Create a non-root user (Hugging Face requirement)
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
-# Run Uvicorn server, using the PORT environment variable provided by Railway
-CMD sh -c "cd backend && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+WORKDIR $HOME/app
+
+# Copy the backend code with user permissions
+COPY --chown=user backend/ ./backend/
+
+# Run Uvicorn server on port 7860 (Hugging Face default)
+CMD sh -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 7860"
