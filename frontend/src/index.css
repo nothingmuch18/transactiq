@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== GLOBAL ===== */
+:root {
+  --accent: 99 102 241;
+  --accent-secondary: 139 92 246;
+  --teal: 20 184 166;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.3);
+}
+
+/* ===== GLASSMORPHISM ===== */
+@layer components {
+  .glass {
+    @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+  }
+
+  .glass-sm {
+    @apply bg-white/[0.03] backdrop-blur-lg border border-white/[0.05] rounded-xl;
+  }
+
+  .glass-strong {
+    @apply bg-white/[0.07] backdrop-blur-2xl border border-white/[0.08] rounded-2xl;
+  }
+
+  /* KPI Card */
+  .kpi-card {
+    @apply glass p-5 transition-all duration-300;
+  }
+
+  .kpi-card:hover {
+    @apply bg-white/[0.07] shadow-lg shadow-indigo-500/5 -translate-y-0.5;
+  }
+
+  /* Chart Container */
+  .chart-container {
+    @apply glass p-5;
+  }
+
+  /* Insight Card */
+  .insight-card {
+    @apply glass-sm p-5 border-l-[3px] transition-all duration-200;
+  }
+
+  .insight-card:hover {
+    @apply bg-white/[0.06] shadow-lg shadow-indigo-500/5;
+  }
+
+  /* Input */
+  .input-premium {
+    @apply w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200 font-medium;
+  }
+
+  /* Dark select styling */
+  select.input-premium {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px;
+    cursor: pointer;
+  }
+
+  select.input-premium option {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 8px 12px;
+  }
+
+  select.input-premium option:checked {
+    background: #312e81;
+    color: white;
+  }
+
+  /* Button */
+  .btn-primary {
+    @apply px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 font-medium rounded-lg border border-white/[0.06] transition-all duration-200;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide uppercase;
+  }
+
+  /* Shimmer loading */
+  .shimmer {
+    @apply bg-gradient-to-r from-transparent via-white/[0.04] to-transparent bg-[length:200%_100%] animate-shimmer rounded-xl;
+  }
+
+  /* Section label */
+  .section-label {
+    @apply text-[0.65rem] font-bold uppercase tracking-[0.12em] text-slate-500 mb-3 mt-6;
+  }
+
+  /* Glow effect */
+  .glow-indigo {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.08), 0 0 80px rgba(99, 102, 241, 0.04);
+  }
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #c084fc, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated gradient border */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3), rgba(20, 184, 166, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
