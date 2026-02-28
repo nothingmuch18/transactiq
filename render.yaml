@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: transactiq
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /api/health

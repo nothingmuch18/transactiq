@@ -23,6 +23,9 @@ logger = logging.getLogger("upi-platform")
 # Global state
 DATA = {"df": None, "metadata": None, "load_time_ms": 0, "source": ""}
 
+# In-memory cache for computed API results (cleared on data reload)
+CACHE = {}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,6 +43,24 @@ async def lifespan(app: FastAPI):
         DATA["load_time_ms"] = round((time.time() - t0) * 1000, 0)
         DATA["source"] = csv_files[0]
         logger.info(f"Loaded {len(df):,} rows in {DATA['load_time_ms']}ms")
+
+        # Pre-warm cache for instant first page loads
+        logger.info("Pre-warming API cache...")
+        try:
+            from api.overview import get_overview
+            from api.insights import get_insights
+            from api.anomalies import detect_anomalies, AnomalyRequest
+            from api.risk import get_risk
+            from api.quality import get_quality
+            import asyncio
+            await get_overview()
+            await get_insights()
+            await detect_anomalies(AnomalyRequest(method="all"))
+            await get_risk()
+            await get_quality()
+            logger.info(f"Cache pre-warmed: {len(CACHE)} entries")
+        except Exception as e:
+            logger.warning(f"Cache pre-warm partial failure: {e}")
     else:
         logger.warning("No CSV found in data/ directory")
 
@@ -94,3 +115,24 @@ async def health():
         "load_time_ms": DATA["load_time_ms"],
         "source": DATA.get("source", ""),
     }
+
+
+# Serve React frontend in production (when dist/ exists)
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
+if os.path.isdir(FRONTEND_DIR):
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    # Mount static assets (JS, CSS, images)
+    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
+
+    # Catch-all: serve index.html for React Router (must be LAST)
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        file_path = os.path.join(FRONTEND_DIR, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+    logger.info(f"Serving frontend from {FRONTEND_DIR}")
+

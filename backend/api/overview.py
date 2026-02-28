@@ -8,7 +8,9 @@ router = APIRouter(tags=["overview"])
 
 @router.get("/overview")
 async def get_overview():
-    from main import DATA
+    from main import DATA, CACHE
+    if "overview" in CACHE:
+        return CACHE["overview"]
     from src.risk_analyzer import compute_risk_summary
     from src.utils import safe_divide
 
@@ -68,7 +70,7 @@ async def get_overview():
         cat.columns = ["category", "value"]
         categories = cat.to_dict(orient="records")
 
-    return {
+    result = {
         "kpis": kpis,
         "roles": roles,
         "date_range": meta.get("date_range", {}),
@@ -78,3 +80,5 @@ async def get_overview():
         "columns": len(df.columns),
         "load_time_ms": DATA["load_time_ms"],
     }
+    CACHE["overview"] = result
+    return result

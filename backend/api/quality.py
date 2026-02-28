@@ -8,7 +8,9 @@ router = APIRouter(tags=["quality"])
 
 @router.get("/quality")
 async def get_quality():
-    from main import DATA
+    from main import DATA, CACHE
+    if "quality" in CACHE:
+        return CACHE["quality"]
     from src.data_quality import run_quality_checks
 
     df = DATA["df"]
@@ -20,7 +22,7 @@ async def get_quality():
 
     # Serialize DataFrames
     missing = results["missing_values"]
-    return {
+    result = {
         "quality_score": results["quality_score"],
         "quality_grade": results["quality_grade"],
         "total_records": int(len(df)),
@@ -44,3 +46,5 @@ async def get_quality():
             "found": results["consistency"]["found"],
         },
     }
+    CACHE["quality"] = result
+    return result

@@ -1,43 +1,63 @@
-const BASE = '/data' // Route directly to the public/data folder
+const BASE = '/api'
 
-async function request(file) {
-    const res = await fetch(`${BASE}/${file}`)
+async function request(path, options = {}) {
+    const res = await fetch(`${BASE}/${path}`, options)
     if (!res.ok) {
-        throw new Error(`Data load failed: ${res.status}`)
+        const text = await res.text().catch(() => '')
+        throw new Error(`API error ${res.status}: ${text || res.statusText}`)
     }
     return res.json()
 }
 
+function post(path, body) {
+    return request(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    })
+}
+
 export const api = {
-    health: () => Promise.resolve({ status: 'ok', message: 'Running in serverless static mode' }),
-    overview: () => request('overview.json'),
+    health: () => request('health'),
+    overview: () => request('overview'),
 
-    // AI NLP Queries cannot run without a Python backend, returning static mock
-    query: (query) => Promise.resolve({
-        answer: "I am currently running in **Serverless Offline Mode**. The NLP engine is disabled, but the dashboard data is still fully available.",
-        data: null
-    }),
+    // AI NLP Query
+    query: (query) => post('query', { query }),
 
-    insights: () => request('insights.json'),
-    anomalies: () => request('anomalies.json'),
-    risk: () => request('risk.json'),
+    // Insights
+    insights: () => request('insights'),
 
-    // Compare is dynamic normally, we'll return the hardcoded default or empty
-    compareDimensions: () => Promise.resolve({
-        dimension1: ['Category', 'Payer City'],
-        dimension2: ['Receiver Type'],
-        metrics: ['value']
-    }),
-    compare: () => request('compare.json'),
-
-    quality: () => request('quality.json'),
-
-    // Upload & Schema cannot work dynamically without Python Pandas
-    upload: async () => {
-        throw new Error("Dynamic CSV Uploads are disabled in Serverless mode.")
+    // Anomaly detection
+    anomalies: (methodOrObj = 'all') => {
+        const method = typeof methodOrObj === 'object' ? (methodOrObj.method || 'all') : methodOrObj
+        return post('anomalies', { method })
     },
-    reset: () => Promise.resolve({ status: 'ok' }),
-    schema: () => request('schema.json'),
-    preview: () => request('preview.json'),
-    exportCSV: () => `/data/upi_transactions.csv`,
+
+    // Risk analysis
+    risk: (dimension) => request(`risk${dimension ? `?dimension=${encodeURIComponent(dimension)}` : ''}`),
+
+    // Compare
+    compareDimensions: () => request('compare/dimensions'),
+    compare: (dimOrObj, group_a, group_b) => {
+        if (typeof dimOrObj === 'object') {
+            return post('compare', { dimension: dimOrObj.dimension, group_a: dimOrObj.group_a, group_b: dimOrObj.group_b })
+        }
+        return post('compare', { dimension: dimOrObj, group_a, group_b })
+    },
+
+    // Quality
+    quality: () => request('quality'),
+
+    // Upload & Dataset management
+    upload: async (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await fetch(`${BASE}/upload`, { method: 'POST', body: formData })
+        if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+        return res.json()
+    },
+    reset: () => post('reset', {}),
+    schema: () => request('schema'),
+    preview: (limit = 50) => request(`preview?limit=${limit}`),
+    exportCSV: () => `${BASE}/export`,
 }

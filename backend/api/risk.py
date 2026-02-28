@@ -9,7 +9,10 @@ router = APIRouter(tags=["risk"])
 
 @router.get("/risk")
 async def get_risk(dimension: Optional[str] = None):
-    from main import DATA
+    from main import DATA, CACHE
+    cache_key = f"risk_{dimension or 'default'}"
+    if cache_key in CACHE:
+        return CACHE[cache_key]
     from src.risk_analyzer import compute_risk_summary, compute_concentration_metrics, compute_volatility_index
 
     df = DATA["df"]
@@ -46,7 +49,7 @@ async def get_risk(dimension: Optional[str] = None):
     # Available dimensions
     cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
 
-    return {
+    result = {
         "risk_index": risk.get("risk_index", 0),
         "risk_level": risk.get("risk_level", "N/A"),
         "concentration": {**conc, "table": conc_table},
@@ -54,3 +57,5 @@ async def get_risk(dimension: Optional[str] = None):
         "current_dimension": dim,
         "available_dimensions": cat_cols,
     }
+    CACHE[cache_key] = result
+    return result

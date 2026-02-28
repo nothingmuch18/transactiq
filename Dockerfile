@@ -1,26 +1,24 @@
-FROM python:3.10-slim
+FROM node:20-slim AS frontend-build
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --production=false
+COPY frontend/ ./
+RUN npm run build
 
-WORKDIR /app
+FROM python:3.11-slim
+WORKDIR /app/backend
 
-# Install system dependencies required for some Python packages
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install
+# Install Python dependencies
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create a non-root user (Hugging Face requirement)
-RUN useradd -m -u 1000 user
-USER user
-ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH
+# Copy backend source code
+COPY backend/ ./
 
-WORKDIR $HOME/app
+# Copy built frontend into backend/dist for static serving
+COPY --from=frontend-build /app/frontend/dist ./dist/
 
-# Copy the backend code with user permissions
-COPY --chown=user backend/ ./backend/
+# Expose port (Render uses 10000 by default)
+EXPOSE 10000
 
-# Run Uvicorn server on port 7860 (Hugging Face default)
-CMD sh -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 7860"
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]

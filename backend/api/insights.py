@@ -8,7 +8,9 @@ router = APIRouter(tags=["insights"])
 
 @router.get("/insights")
 async def get_insights():
-    from main import DATA
+    from main import DATA, CACHE
+    if "insights" in CACHE:
+        return CACHE["insights"]
     from src.insight_engine import generate_insights
 
     df = DATA["df"]
@@ -17,4 +19,6 @@ async def get_insights():
         return {"error": "No data loaded"}
 
     insights = generate_insights(df, meta)
-    return {"insights": insights, "count": len(insights)}
+    result = {"insights": insights, "count": len(insights)}
+    CACHE["insights"] = result
+    return result

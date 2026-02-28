@@ -17,7 +17,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 @router.post("/upload")
 async def upload_csv(file: UploadFile = File(...)):
     """Upload a CSV file and replace the active dataset."""
-    from main import DATA, logger
+    from main import DATA, logger, CACHE
     from src.data_profiler import load_and_profile, get_column_summary_df
     import pandas as pd
 
@@ -68,6 +68,7 @@ async def upload_csv(file: UploadFile = File(...)):
     DATA["source"] = file.filename
 
     logger.info(f"Uploaded: {file.filename} — {len(df):,} rows, {len(df.columns)} cols in {load_time}ms")
+    CACHE.clear()
 
     # Build response
     col_summary = get_column_summary_df(metadata).to_dict(orient="records")
@@ -95,7 +96,7 @@ async def upload_csv(file: UploadFile = File(...)):
 @router.post("/reset")
 async def reset_dataset():
     """Reset to the default dataset from data/ directory."""
-    from main import DATA, logger
+    from main import DATA, logger, CACHE
     from src.data_profiler import load_and_profile
 
     data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -115,6 +116,7 @@ async def reset_dataset():
     DATA["source"] = csv_files[0]
 
     logger.info(f"Reset to default: {csv_files[0]} — {len(df):,} rows in {load_time}ms")
+    CACHE.clear()
 
     return {
         "status": "ok",
