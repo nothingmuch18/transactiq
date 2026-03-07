@@ -1,63 +1,43 @@
-const BASE = '/api'
+/**
+ * Static data API — loads pre-generated JSON from /data/ directory.
+ * Falls back gracefully for endpoints that require a live backend.
+ */
 
-async function request(path, options = {}) {
-    const res = await fetch(`${BASE}/${path}`, options)
+async function fetchJSON(path) {
+    const res = await fetch(`/data/${path}`)
     if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        throw new Error(`API error ${res.status}: ${text || res.statusText}`)
+        throw new Error(`Failed to load ${path}: ${res.status}`)
     }
     return res.json()
 }
 
-function post(path, body) {
-    return request(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-    })
-}
-
 export const api = {
-    health: () => request('health'),
-    overview: () => request('overview'),
+    health: () => Promise.resolve({ status: 'ok', rows: 250000, load_time_ms: 0, source: 'static' }),
+    overview: () => fetchJSON('overview.json'),
 
-    // AI NLP Query
-    query: (query) => post('query', { query }),
+    // AI NLP Query — not available in static mode
+    query: () => Promise.reject(new Error('AI queries require a live backend. Upload your data to a running instance.')),
 
     // Insights
-    insights: () => request('insights'),
+    insights: () => fetchJSON('insights.json'),
 
     // Anomaly detection
-    anomalies: (methodOrObj = 'all') => {
-        const method = typeof methodOrObj === 'object' ? (methodOrObj.method || 'all') : methodOrObj
-        return post('anomalies', { method })
-    },
+    anomalies: () => fetchJSON('anomalies.json'),
 
     // Risk analysis
-    risk: (dimension) => request(`risk${dimension ? `?dimension=${encodeURIComponent(dimension)}` : ''}`),
+    risk: () => fetchJSON('risk.json'),
 
     // Compare
-    compareDimensions: () => request('compare/dimensions'),
-    compare: (dimOrObj, group_a, group_b) => {
-        if (typeof dimOrObj === 'object') {
-            return post('compare', { dimension: dimOrObj.dimension, group_a: dimOrObj.group_a, group_b: dimOrObj.group_b })
-        }
-        return post('compare', { dimension: dimOrObj, group_a, group_b })
-    },
+    compareDimensions: () => fetchJSON('schema.json').then(s => s.categorical_columns || []),
+    compare: () => fetchJSON('compare.json'),
 
     // Quality
-    quality: () => request('quality'),
+    quality: () => fetchJSON('quality.json'),
 
-    // Upload & Dataset management
-    upload: async (file) => {
-        const formData = new FormData()
-        formData.append('file', file)
-        const res = await fetch(`${BASE}/upload`, { method: 'POST', body: formData })
-        if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
-        return res.json()
-    },
-    reset: () => post('reset', {}),
-    schema: () => request('schema'),
-    preview: (limit = 50) => request(`preview?limit=${limit}`),
-    exportCSV: () => `${BASE}/export`,
+    // Upload & Dataset management — not available in static mode
+    upload: () => Promise.reject(new Error('Upload requires a live backend.')),
+    reset: () => Promise.reject(new Error('Reset requires a live backend.')),
+    schema: () => fetchJSON('schema.json'),
+    preview: () => fetchJSON('preview.json'),
+    exportCSV: () => '/data/preview.json',
 }
