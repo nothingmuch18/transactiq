@@ -1,11 +1,13 @@
 /**
  * Static API layer — fetches pre-generated JSON from /data/*.json
- * Used for Netlify (and any static host) deployment.
- * POST-based endpoints (query, anomalies, compare) return cached static data.
+ * Works on any static host (Vercel, GitHub Pages, Netlify, etc.)
+ * Uses Vite's BASE_URL to handle subpath deployments (e.g. GitHub Pages).
  */
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 async function fetchJSON(path) {
-    const res = await fetch(path)
+    const res = await fetch(`${BASE}${path}`)
     if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(`Fetch error ${res.status}: ${text || res.statusText}`)
@@ -49,5 +51,5 @@ export const api = {
     reset: () => Promise.resolve({ status: 'ok' }),
     schema: () => fetchJSON('/data/schema.json'),
     preview: (_limit = 50) => fetchJSON('/data/preview.json'),
-    exportCSV: () => '/data/preview.json',
+    exportCSV: () => `${BASE}/data/preview.json`,
 }

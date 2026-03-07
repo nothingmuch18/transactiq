@@ -30,7 +30,7 @@ function PageLoader() {
 
 export default function App() {
     return (
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
             <div className="flex min-h-screen bg-slate-950">
                 <Sidebar />
                 <main className="ml-56 flex-1 p-6 lg:p-8">
